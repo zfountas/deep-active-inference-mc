@@ -185,8 +185,8 @@ class ActiveInferenceModel:
             pickle.dump(stats,ff)
         with open(folder_chp+'/optimizers.pkl','wb') as ff:
             pickle.dump(optimizers,ff)
-        copyfile('tfmodel.py', folder_chp+'/tfmodel.py')
-        copyfile('tfloss.py', folder_chp+'/tfloss.py')
+        copyfile('src/tfmodel.py', folder_chp+'/tfmodel.py')
+        copyfile('src/tfloss.py', folder_chp+'/tfloss.py')
         if script_file != "":
             copyfile(script_file, folder_chp+'/'+script_file)
 
