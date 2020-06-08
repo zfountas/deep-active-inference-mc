@@ -2,7 +2,7 @@ import tensorflow as tf
 import pickle
 import numpy as np
 from shutil import copyfile
-from tfutils import *
+from src.tfutils import *
 
 class ModelTop(tf.keras.Model):
     def __init__(self, s_dim, pi_dim, tf_precision, precision):

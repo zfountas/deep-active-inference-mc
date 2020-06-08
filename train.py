@@ -6,14 +6,14 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # Import custom libraries
-from game_environment import Game
-import util as u
-import tfloss as loss
-from tfmodel import ActiveInferenceModel
-from tfutils import *
-from tools.reconstructions_plot import reconstructions_plot
-from tools.generate_traversals import generate_traversals
-from tools.stats_plot import stats_plot
+from src.game_environment import Game
+import src.util as u
+import src.tfloss as loss
+from src.tfmodel import ActiveInferenceModel
+from src.tfutils import *
+from graphs.reconstructions_plot import reconstructions_plot
+from graphs.generate_traversals import generate_traversals
+from graphs.stats_plot import stats_plot
 
 parser = argparse.ArgumentParser(description='Training script.')
 parser.add_argument('-r', '--resume', action='store_true', help='If this is used, the script tries to load existing weights and resume training.')

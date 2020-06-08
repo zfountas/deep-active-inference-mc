@@ -1,7 +1,7 @@
 import os, argparse, pickle, time, cv2
 import numpy as np
 import tensorflow as tf
-from tfmodel import ActiveInferenceModel
+from src.tfmodel import ActiveInferenceModel
 
 NODE_ID = 0
 class Node:

@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-from tfutils import *
+from src.tfutils import *
 
 def compute_omega(kl_pi, a, b, c, d):
     return a * ( 1.0 - 1.0/(1.0 + np.exp(- (kl_pi-b) / c)) ) + d

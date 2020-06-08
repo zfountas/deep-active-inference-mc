@@ -1,6 +1,6 @@
 import time
 import numpy as np
-from util import np_precision
+from src.util import np_precision
 
 class Game:
     def __init__(self, number_of_games=1):

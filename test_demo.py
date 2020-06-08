@@ -33,9 +33,9 @@ if True:
     session = InteractiveSession(config=config)
 
 from game_environment import Game
-import util as u
-import tfutils as tfu, mcts
-from tfmodel import ActiveInferenceModel
+import src.util as u
+import src.tfutils as tfu, mcts
+from src.tfmodel import ActiveInferenceModel
 
 params = mcts.MCTS_Params()
 params.C = args.C
