@@ -72,7 +72,7 @@ This command will open a graphical interface which can be controlled by a number
   @article{fountas2020daimc,
     title={Deep active inference agents using Monte-Carlo methods},
     author={Fountas, Zafeirios and Sajid, Noor and Mediano, Pedro A.M. and Friston, Karl},
-    journal={arXiv preprint arXiv:},
+    journal={arXiv preprint	arXiv:2006.04176},
     year={2020}
   }
   ```
