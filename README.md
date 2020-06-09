@@ -14,7 +14,7 @@ In this work, we propose the deep neural architecture illustrated below, which c
 
 <p align="center"><img src="architecture.png" width="600"></p>
 
-We test this architecture on two tasks from the Animal-AI Olympics and a new simple object-sorting task based on the dSprites dataset.
+We test this architecture on two tasks from the Animal-AI Olympics and a new simple object-sorting task based on [DeepMind's dSprites dataset](https://github.com/deepmind/dsprites-dataset/).
 
 ### Demo behavior
 
