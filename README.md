@@ -2,7 +2,7 @@
 
 This source code release accompanies the manuscript:
 
-Z. Fountas, N. Sajid, P. A.M. Mediano and K. Friston "[Deep active inference agents using Monte-Carlo methods](#)", arXiv.
+Z. Fountas, N. Sajid, P. A.M. Mediano and K. Friston "[Deep active inference agents using Monte-Carlo methods](https://arxiv.org/abs/2006.04176)",	arXiv:2006.04176.
 
 which is currently available in an online pre-print version. If you use this model or the dynamic dSprites environment in your work, please cite our pre-print.
 
