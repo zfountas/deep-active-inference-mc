@@ -150,7 +150,7 @@ class MCTS_Params:
         self.method = 'ai'
         self.using_prior_for_exploration = False
 
-def active_inference_mcts(model, frame, params, o_shape=(64,64,1), pi_dim=4):
+def active_inference_mcts(model, frame, params, o_shape=(64,64,1)):
     states_explored = 0
     all_paths = [] # For debugging.
     all_paths_G = [] # For debugging.
@@ -160,7 +160,7 @@ def active_inference_mcts(model, frame, params, o_shape=(64,64,1), pi_dim=4):
     # Calculate current s_t
     qs0_mean, qs0_logvar = model.model_down.encoder(frame.reshape(1,o_shape[0],o_shape[1],o_shape[2]))
 
-    # Important to be the mean here as we repeat it self.pi_dim times!
+    # Important to be the mean here as we repeat it model.pi_dim times!
     root = Node(s=qs0_mean[0], model=model, C=params.C, pi_dim=model.pi_dim, using_prior_for_exploration=params.using_prior_for_exploration)
 
     # Habit.
@@ -170,7 +170,7 @@ def active_inference_mcts(model, frame, params, o_shape=(64,64,1), pi_dim=4):
         if calc_threshold(root.Qpi, axis=0) > params.threshold:
             if params.verbose: print('Decision in phase A Qpi:',root.Qpi, calc_threshold(root.Qpi,axis=0))
             MCTS_choices = root.Qpi
-            return [np.random.choice(pi_dim, p=root.Qpi)], 0, states_explored, all_paths, all_paths_G
+            return [np.random.choice(model.pi_dim, p=root.Qpi)], 0, states_explored, all_paths, all_paths_G
 
     root.expand(use_means=params.use_means)
 
