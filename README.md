@@ -6,8 +6,6 @@ Z. Fountas, N. Sajid, P. A.M. Mediano and K. Friston "[Deep active inference age
 
 which is currently available in an online pre-print version. If you use this model or the dynamic dSprites environment in your work, please cite our pre-print.
 
-*NOTE: This repository is currently being updated. For a more complete version of the source code please visit again this page in July 2020.*
-
 ---
 ### Description
 In this work, we propose the deep neural architecture illustrated below, which can be used to train scaled-up active inference agents for continuous complex environments based on amortized inference, M-C tree search, M-C dropouts and top-down transition precision, that encourages disentangled latent representations.
