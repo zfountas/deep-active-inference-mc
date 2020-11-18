@@ -8,7 +8,7 @@ which is accepted for presentation in NeurIPS 2020 and currently available in an
 
 ---
 ### Description
-In this work, we propose the deep neural architecture illustrated below, which can be used to train scaled-up active inference agents for continuous complex environments based on amortized inference, M-C tree search, M-C dropouts and top-down transition precision, that encourages disentangled latent representations.
+For a quick overview see this [video](https://www.youtube.com/watch?v=KA-lZ3krVtU). In this work, we propose the deep neural architecture illustrated below, which can be used to train scaled-up active inference agents for continuous complex environments based on amortized inference, M-C tree search, M-C dropouts and top-down transition precision, that encourages disentangled latent representations.
 
 <p align="center"><img src="architecture.png" width="600"></p>
 
