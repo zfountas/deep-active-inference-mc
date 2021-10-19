@@ -2,15 +2,15 @@
 
 This source code release accompanies the manuscript:
 
-Z. Fountas, N. Sajid, P. A.M. Mediano and K. Friston "[Deep active inference agents using Monte-Carlo methods](https://arxiv.org/abs/2006.04176)",	arXiv:2006.04176.
+Z. Fountas, N. Sajid, P. A.M. Mediano and K. Friston "[Deep active inference agents using Monte-Carlo methods](https://papers.nips.cc/paper/2020/hash/865dfbde8a344b44095495f3591f7407-Abstract.html)",	Advances in Neural Information Processing Systems 33 (NeurIPS 2020).
 
-which is accepted for presentation in NeurIPS 2020 and currently available in an online pre-print version. If you use this model or the dynamic dSprites environment in your work, please cite our pre-print.
+If you use this model or the dynamic dSprites environment in your work, please cite our paper.
 
 ---
 ### Description
 For a quick overview see this [video](https://www.youtube.com/watch?v=KA-lZ3krVtU). In this work, we propose the deep neural architecture illustrated below, which can be used to train scaled-up active inference agents for continuous complex environments based on amortized inference, M-C tree search, M-C dropouts and top-down transition precision, that encourages disentangled latent representations.
 
-<p align="center"><img src="architecture.png" width="600"></p>
+<p align="center"><img src="architecture.png" width="700"></p>
 
 We test this architecture on two tasks from the Animal-AI Olympics and a new simple object-sorting task based on [DeepMind's dSprites dataset](https://github.com/deepmind/dsprites-dataset/).
 
@@ -73,10 +73,15 @@ This command will open a graphical interface which can be controlled by a number
 
   ### Bibtex
   ```
-  @article{fountas2020daimc,
-    title={Deep active inference agents using Monte-Carlo methods},
-    author={Fountas, Zafeirios and Sajid, Noor and Mediano, Pedro A.M. and Friston, Karl},
-    journal={arXiv preprint arXiv:2006.04176},
-    year={2020}
-  }
+@inproceedings{fountas2020daimc,
+ author = {Fountas, Zafeirios and Sajid, Noor and Mediano, Pedro and Friston, Karl},
+ booktitle = {Advances in Neural Information Processing Systems},
+ editor = {H. Larochelle and M. Ranzato and R. Hadsell and M. F. Balcan and H. Lin},
+ pages = {11662--11675},
+ publisher = {Curran Associates, Inc.},
+ title = {Deep active inference agents using Monte-Carlo methods},
+ url = {https://proceedings.neurips.cc/paper/2020/file/865dfbde8a344b44095495f3591f7407-Paper.pdf},
+ volume = {33},
+ year = {2020}
+}
   ```
