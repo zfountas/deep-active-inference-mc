@@ -131,3 +131,6 @@ dmypy.json
 # Custom ones
 figs_*
 *.npz
+
+
+**/.DS_Store
