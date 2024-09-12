@@ -1,20 +1,23 @@
-import os, time, argparse, pickle, cv2
-import numpy as np, matplotlib.pyplot as plt
-import tensorflow as tf
+import os, time, argparse, pickle
+import numpy as np
+import matplotlib.pyplot as plt
+import torch
+import torchvision.transforms as T
+from PIL import Image
 
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+# Set PyTorch to use CPU if CUDA is not available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 parser = argparse.ArgumentParser(description="Training script.")
 parser.add_argument("-n", "--network", type=str, default="", required=True, help="The path of a checkpoint to be loaded.")
-parser.add_argument("-m", "--mean", action="store_true", help="Whether expected free energy should be calculated using the mean instead of sampling..")
+parser.add_argument("-m", "--mean", action="store_true", help="Whether expected free energy should be calculated using the mean instead of sampling.")
 parser.add_argument("-d", "--duration", type=int, default=50001, help="Duration of experiment.")
 parser.add_argument("-method", "--method", type=str, default="mcts", help="Pre-select method used by the agent for action selection. Available: t1, t12, ai, mcts or habit!")
 parser.add_argument("-steps", "--steps", type=int, default=7, help="How many steps ahead the agent can imagine!")
 parser.add_argument("-temp", "--temperature", type=float, default=1, help="Initialize testing routine!")
-parser.add_argument("-jumps", "--jumps", type=int, default=5, help="Mental jumps: How many steps ahead the agent has learnt to predict in a singe step!")
+parser.add_argument("-jumps", "--jumps", type=int, default=5, help="Mental jumps: How many steps ahead the agent has learnt to predict in a single step!")
 # MCTS
-parser.add_argument("-C", "--C", type=float, help="MCTS parameter: C: Balance between exploration and exploitation..", default=1.0)
+parser.add_argument("-C", "--C", type=float, help="MCTS parameter: C: Balance between exploration and exploitation.", default=1.0)
 parser.add_argument("-repeats", "--repeats", type=int, help="MCTS parameter: Simulation repeats", default=300)
 parser.add_argument("-threshold", "--threshold", type=float, help="MCTS parameter: Threshold to make decision prematurely", default=0.5)
 parser.add_argument("-depth", "--depth", type=int, help="MCTS parameter: Simulation depth", default=3)
@@ -24,21 +27,10 @@ args = parser.parse_args()
 if args.network[-1] in ["/", "\\"]:
     args.network = args.network[:-1]
 
-# If the machine used does not have enough memory, make this True
-if True:
-    from tensorflow.compat.v1 import ConfigProto
-    from tensorflow.compat.v1 import InteractiveSession
-
-    config = ConfigProto()
-    config.gpu_options.per_process_gpu_memory_fraction = 0.8
-    config.gpu_options.allow_growth = True
-    session = InteractiveSession(config=config)
-
 from src.game_environment import Game
 import src.util as u
-import src.tfutils as tfu
 from src.mcts import MCTS_Params, active_inference_mcts
-from src.tfmodel import ActiveInferenceModel
+from src.torchmodel import ActiveInferenceModel
 
 params = MCTS_Params()
 params.C = args.C
@@ -47,23 +39,20 @@ params.threshold = args.threshold
 params.simulation_depth = args.depth
 params.use_habit = args.no_habit
 
-game = Game(1)
+game = Game(1)  # Pass the number of games to the Game constructor
 
 s_dim = 10
 pi_dim = 4
 BATCH_SIZE = 1
 
-model = ActiveInferenceModel(s_dim=s_dim, pi_dim=pi_dim, gamma=1.0, beta_s=1.0, beta_o=1.0, colour_channels=1, resolution=64)
+model = ActiveInferenceModel(s_dim=s_dim, pi_dim=pi_dim, gamma=1.0, beta_s=1.0, beta_o=1.0, colour_channels=1, resolution=64).to(device)
 model.load_all(args.network)
-
-cv2.namedWindow("demo", cv2.WINDOW_NORMAL)
-cv2.resizeWindow("demo", 500, 500)
 
 game.randomize_environment(0)
 game.current_s[0, -1] = 0.0
 
 pi0 = np.array([0.2, 0.2, 0.2, 0.2, 0.2])
-o0 = game.current_frame(0).reshape(1, 64, 64, 1)
+o0 = torch.from_numpy(game.current_frame(0).reshape(1, 1, 64, 64)).float().to(device)
 qs0_mean, qs0_logvar = model.model_down.encoder(o0)
 s0 = model.model_down.reparameterize(qs0_mean, qs0_logvar)
 
@@ -144,30 +133,26 @@ while t < args.duration:
         o_single = game.current_frame(0)
 
         if args.method == "habit":
-            qs_mean, _ = model.model_down.encoder(o_single.reshape(1, 64, 64, 1))
+            qs_mean, _ = model.model_down.encoder(torch.from_numpy(o_single).unsqueeze(0).unsqueeze(0).float().to(device))
             _, Qpi, _ = model.model_top.encode_s(qs_mean)
-            Qpi_choices = Qpi.numpy()[0]
+            Qpi_choices = Qpi.cpu().numpy()[0]
             G_choices = [0.0, 0.0, 0.0, 0.0]
             R_choices = [0.0, 0.0, 0.0, 0.0]
         elif args.method == "mcts":
-            mcts_path, repeats_done, states_explored, all_paths, all_paths_G = active_inference_mcts(model=model, frame=o_single, params=params, o_shape=(64, 64, 1))
+            mcts_path, repeats_done, states_explored, all_paths, all_paths_G = active_inference_mcts(model=model, frame=o_single, params=params, o_shape=(1, 64, 64))
             path_pos_x = int(game.current_s[0, 5])
             path_pos_y = int(game.current_s[0, 4])
             mask = make_mask(all_paths, path_pos_x, path_pos_y)
             G = term0 = term1 = term2 = np.zeros(4)
             R_choices = term12_choices = G_choices = np.array([0.0, 0.0, 0.0, 0.0])
         else:
-            o1 = np.zeros([4, 64, 64, 1], dtype=np.float32)
-            o1[0] = o_single
-            o1[1] = o_single
-            o1[2] = o_single
-            o1[3] = o_single
+            o1 = torch.from_numpy(np.repeat(o_single[np.newaxis, np.newaxis, :, :], 4, axis=0)).float().to(device)
             sum_G, sum_terms, po2 = model.calculate_G_4_repeated(o1, steps=args.steps, samples=samples, calc_mean=args.mean)
 
-            G = sum_G.numpy() / float(args.steps)
-            term0 = -sum_terms[0].numpy() / float(args.steps)
-            term1 = sum_terms[1].numpy() / float(args.steps)
-            term2 = sum_terms[2].numpy() / float(args.steps)
+            G = sum_G.cpu().numpy() / float(args.steps)
+            term0 = -sum_terms[0].cpu().numpy() / float(args.steps)
+            term1 = sum_terms[1].cpu().numpy() / float(args.steps)
+            term2 = sum_terms[2].cpu().numpy() / float(args.steps)
 
             R_choices = softmax(-term0, args.temperature)
             term12_choices = softmax(-(term0 + term1), args.temperature)
@@ -225,88 +210,85 @@ while t < args.duration:
         frame[16:48, 16:48] += mask.reshape(32, 32, 1)
 
     if COLOR:
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-    frame = cv2.resize(frame, (500, 500), interpolation=cv2.INTER_NEAREST)
-    frame = cv2.putText(
-        frame,
-        "score: " + str(game.get_reward(0)) + " (" + str(float(duration_of_experiment) * game.get_reward(0) / float(t)) + ")",
-        (15, 25),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.7,
-        (255, 255, 255),
-        2,
-        cv2.LINE_AA,
-    )
-    frame = cv2.putText(frame, "s: " + str(game.current_s[0]), (15, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
+        frame = Image.fromarray((frame * 255).astype(np.uint8)).convert('RGB')
+    else:
+        frame = Image.fromarray((frame * 255).astype(np.uint8))
+    frame = T.Resize((500, 500), interpolation=T.InterpolationMode.NEAREST)(frame)
+    frame = T.ToTensor()(frame)
+
+    plt.clf()
+    plt.imshow(frame.permute(1, 2, 0))
+    plt.text(15, 25, f"score: {game.get_reward(0)} ({float(duration_of_experiment) * game.get_reward(0) / float(t)})", fontsize=10, color='white')
+    plt.text(15, 50, f"s: {game.current_s[0]}", fontsize=8, color='white')
     if args.method != "mcts":
-        frame = cv2.putText(frame, "G: " + str(np.around(G, 2)), (15, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-        frame = cv2.putText(frame, "Term a: " + str(np.around(term0 - term0.min(), 2)), (15, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-        frame = cv2.putText(frame, "Term b: " + str(np.around(term1 - term1.min(), 2)), (15, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-        frame = cv2.putText(frame, "Term c: " + str(np.around(term2 - term2.min(), 2)), (15, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-        frame = cv2.putText(frame, "softmax(term a):   " + str(np.around(R_choices, 2)), (15, 170), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-        frame = cv2.putText(frame, "softmax(terms a+b): " + str(np.around(term12_choices, 2)), (15, 190), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-        frame = cv2.putText(frame, "softmax(G):   " + str(np.around(G_choices, 2)), (15, 210), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-    cv2.imshow("demo", frame)
+        plt.text(15, 70, f"G: {np.around(G, 2)}", fontsize=8, color='white')
+        plt.text(15, 100, f"Term a: {np.around(term0 - term0.min(), 2)}", fontsize=8, color='white')
+        plt.text(15, 120, f"Term b: {np.around(term1 - term1.min(), 2)}", fontsize=8, color='white')
+        plt.text(15, 140, f"Term c: {np.around(term2 - term2.min(), 2)}", fontsize=8, color='white')
+        plt.text(15, 170, f"softmax(term a):   {np.around(R_choices, 2)}", fontsize=8, color='white')
+        plt.text(15, 190, f"softmax(terms a+b): {np.around(term12_choices, 2)}", fontsize=8, color='white')
+        plt.text(15, 210, f"softmax(G):   {np.around(G_choices, 2)}", fontsize=8, color='white')
+    plt.pause(0.001)
 
     # -- KEYBOARD SHORTCUTS ------------------------------------------------
-    k = cv2.waitKey(30)
-    if k == ord("q") or k == 27:  # ESC
+    k = input("Press a key (q to quit): ")
+    if k == 'q':
         break
-    elif k == ord("m"):
+    elif k == 'm':
         args.mean = not args.mean
         print("Using mean:", args.mean)
-    elif k in [ord("s")]:
+    elif k == 's':
         last_pi = 0
         game.up(0)
-    elif k in [ord("w")]:
+    elif k == 'w':
         last_pi = 1
         game.down(0)
-    elif k in [ord("d")]:
+    elif k == 'd':
         last_pi = 2
         game.left(0)
-    elif k in [ord("a")]:
+    elif k == 'a':
         last_pi = 3
         game.right(0)
-    elif k == ord("r"):
+    elif k == 'r':
         game.current_s[0, 6] = 0.0
         t = 0
         print("Restart scoring")
-    elif k == ord("1"):
+    elif k == '1':
         args.method = "mcts"
         print("Active inference with full-scale planner in control (all terms of G used)")
-    elif k == ord("2"):
+    elif k == '2':
         args.method = "ai"
         print("1-step active inference in control (all terms of G used)")
-    elif k == ord("3"):
+    elif k == '3':
         args.method = "habit"
         print("Habitual mode")
-    elif k == ord("4"):
+    elif k == '4':
         args.method = "no"
         print("Stopped. You can control the agent now!")
-    elif k == ord("5"):
+    elif k == '5':
         args.method = "t1"
         print("Term a in control (reward-based agent)")
-    elif k == ord("6"):
+    elif k == '6':
         args.method = "t12"
         print("Terms a+b in control")
-    elif k in [ord("o"), ord("[")]:
+    elif k == 'o' or k == '[':
         if args.steps > 1:
             args.steps -= 1
         print("STEPS", args.steps)
-    elif k in [ord("p"), ord("]")]:
+    elif k == 'p' or k == ']':
         args.steps += 1
         print("STEPS", args.steps)
-    elif k == ord("8"):
+    elif k == '8':
         if args.temperature > 5.0:
             args.temperature -= 5.0
         print("Temperature for softmax:", args.temperature)
-    elif k == ord("9"):
+    elif k == '9':
         args.temperature += 5.0
         print("Temperature for softmax:", args.temperature)
 
     t += 1
 
-cv2.destroyAllWindows()
+plt.close()
 
 exit("Exiting ok...!")
 
