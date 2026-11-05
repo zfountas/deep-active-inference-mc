@@ -171,10 +171,10 @@ class ActiveInferenceModel:
             torch.save(self.model_mid.state_dict(), f"{folder_chp}/checkpoint_mid.pth")
 
     def load_weights(self, folder_chp):
-        self.model_down.load_state_dict(torch.load(f"{folder_chp}/checkpoint_down.pth"))
+        self.model_down.load_state_dict(torch.load(f"{folder_chp}/checkpoint_down.pth", weights_only=True))
         if self.pi_dim > 0:
-            self.model_top.load_state_dict(torch.load(f"{folder_chp}/checkpoint_top.pth"))
-            self.model_mid.load_state_dict(torch.load(f"{folder_chp}/checkpoint_mid.pth"))
+            self.model_top.load_state_dict(torch.load(f"{folder_chp}/checkpoint_top.pth", weights_only=True))
+            self.model_mid.load_state_dict(torch.load(f"{folder_chp}/checkpoint_mid.pth", weights_only=True))
 
     def save_all(self, folder_chp, stats, script_file="", optimizers={}):
         optimizers_for_pickle = {k: v.state_dict() for k, v in optimizers.items()}
